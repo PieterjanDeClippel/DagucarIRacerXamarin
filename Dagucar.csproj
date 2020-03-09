@@ -66,6 +66,9 @@
   <ItemGroup>
     <Compile Include="Activities\DiscoverActivity.cs" />
     <Compile Include="Activities\MainActivity.cs" />
+    <Compile Include="Activities\RaceActivity.cs" />
+    <Compile Include="Enums\eDirection.cs" />
+    <Compile Include="Enums\eSense.cs" />
     <Compile Include="Events\EventArgs\BondStateChangedEventArgs.cs" />
     <Compile Include="Events\EventArgs\DeviceFoundEventArgs.cs" />
     <Compile Include="Events\EventArgs\UuidFetchedEventArgs.cs" />
@@ -118,6 +121,11 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\activity_discovery.xml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\activity_race.xml">
       <SubType>Designer</SubType>
     </AndroidResource>
   </ItemGroup>

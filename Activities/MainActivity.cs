@@ -119,6 +119,8 @@ namespace Dagucar.Activities
             var sock = device.CreateRfcommSocketToServiceRecord(uuid);
             sock.Connect();
 
+            RaceActivity.Socket = sock;
+            StartActivity(typeof(RaceActivity));
         }
     }
 }
