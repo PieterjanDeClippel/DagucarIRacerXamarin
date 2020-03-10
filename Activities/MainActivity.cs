@@ -53,7 +53,8 @@ namespace Dagucar.Activities
             {
                 Manifest.Permission.Bluetooth,
                 Manifest.Permission.BluetoothAdmin,
-                Manifest.Permission.AccessCoarseLocation
+                Manifest.Permission.AccessCoarseLocation,
+                "android.hardware.sensor.accelerometer"
             };
 
             ActivityCompat.RequestPermissions(this, requiredPermissions, 1);
