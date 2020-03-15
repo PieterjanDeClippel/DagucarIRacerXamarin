@@ -31,6 +31,8 @@ namespace Dagucar.Activities
 
             btnDiscover.Click += BtnDiscover_Click;
             listGekoppeld.ItemClick += ListGekoppeld_ItemClick;
+
+            adapter = BluetoothAdapter.DefaultAdapter;
         }
 
         protected override void OnStart()
@@ -70,21 +72,28 @@ namespace Dagucar.Activities
 
         protected override void OnActivityResult(int requestCode, [GeneratedEnum] Result resultCode, Intent data)
         {
-            if (requestCode != REQUEST_ENABLE_BT)
+            switch (requestCode)
             {
-                base.OnActivityResult(requestCode, resultCode, data);
-            }
-            else if (resultCode == Result.Canceled)
-            {
-                Toast.MakeText(this, "This app requires bluetooth", ToastLength.Long).Show();
-                Finish();
+                case REQUEST_ENABLE_BT:
+                    if (resultCode == Result.Canceled)
+                    {
+                        Toast.MakeText(this, "This app requires bluetooth", ToastLength.Long).Show();
+                        Finish();
+                    }
+                    else
+                    {
+                        LoadBondedDevices();
+                    }
+                    break;
+                default:
+                    base.OnActivityResult(requestCode, resultCode, data);
+                    break;
             }
         }
         #endregion
 
         void InitializeBluetooth()
         {
-            adapter = BluetoothAdapter.DefaultAdapter;
             if (adapter == null)
             {
                 Toast.MakeText(this, "Bluetooth is not available", ToastLength.Long).Show();
@@ -95,6 +104,11 @@ namespace Dagucar.Activities
             if (!adapter.IsEnabled)
                 RequestEnableBluetooth();
 
+            LoadBondedDevices();
+        }
+
+        private void LoadBondedDevices()
+        {
             ListView list = FindViewById<ListView>(Resource.Id.listGekoppeld);
             ArrayAdapter ListAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1);
             list.Adapter = ListAdapter;
@@ -105,7 +119,6 @@ namespace Dagucar.Activities
             bondedDevices.AddRange(adapter.BondedDevices);
         }
 
-
         private void BtnDiscover_Click(object sender, System.EventArgs e)
         {
             StartActivity(typeof(DiscoverActivity));
@@ -113,15 +126,22 @@ namespace Dagucar.Activities
 
         private void ListGekoppeld_ItemClick(object sender, AdapterView.ItemClickEventArgs e)
         {
-            var device = bondedDevices[e.Position];
-            adapter.CancelDiscovery();
+            try
+            {
+                var device = bondedDevices[e.Position];
+                adapter.CancelDiscovery();
 
-            var uuid = UUID.FromString("00001101-0000-1000-8000-00805F9B34FB");
-            var sock = device.CreateRfcommSocketToServiceRecord(uuid);
-            sock.Connect();
+                var uuid = UUID.FromString("00001101-0000-1000-8000-00805F9B34FB");
+                var sock = device.CreateRfcommSocketToServiceRecord(uuid);
+                sock.Connect();
 
-            RaceActivity.Socket = sock;
-            StartActivity(typeof(RaceActivity));
+                RaceActivity.Socket = sock;
+                StartActivity(typeof(RaceActivity));
+            }
+            catch (System.Exception)
+            {
+                Toast.MakeText(this, "Could not connect to device", ToastLength.Long).Show();
+            }
         }
     }
 }

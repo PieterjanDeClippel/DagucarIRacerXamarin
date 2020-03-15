@@ -1,6 +1,7 @@
 ﻿using Android.OS;
 using Android.Widget;
 using Android.Hardware;
+using Android.App;
 
 namespace Dagucar.Activities
 {
@@ -9,6 +10,8 @@ namespace Dagucar.Activities
         private SeekBar sbrDirection;
         private SeekBar sbrSpeed;
         private CheckBox chkAccellero;
+        private TextView lblSpeed;
+        private TextView lblDirection;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -18,6 +21,8 @@ namespace Dagucar.Activities
             sbrDirection = FindViewById<SeekBar>(Resource.Id.sbrDirection);
             sbrSpeed = FindViewById<SeekBar>(Resource.Id.sbrSpeed);
             chkAccellero = FindViewById<CheckBox>(Resource.Id.chkAccellero);
+            lblSpeed = FindViewById<TextView>(Resource.Id.lblSpeed);
+            lblDirection = FindViewById<TextView>(Resource.Id.lblDirection);
             sensorManager = (SensorManager)GetSystemService(SensorService);
             carControl = new CarControl();
 

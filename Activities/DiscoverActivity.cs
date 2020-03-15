@@ -8,14 +8,15 @@ using Android.Bluetooth;
 using Android.Content;
 using Android.OS;
 using Android.Runtime;
+using Android.Support.V7.App;
 using Android.Views;
 using Android.Widget;
 using Dagucar.Receivers;
 
 namespace Dagucar.Activities
 {
-    [Activity(Label = "DiscoverActivity")]
-    public class DiscoverActivity : Activity
+    [Activity(Label = "Search device", Theme = "@style/AppTheme")]
+    public class DiscoverActivity : AppCompatActivity
     {
         private Button btnDiscover;
         private ListView listFoundDevices;
@@ -27,6 +28,7 @@ namespace Dagucar.Activities
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.activity_discovery);
+
             InitializeBluetoothReceiver();
 
             btnDiscover = FindViewById<Button>(Resource.Id.btnDiscover);

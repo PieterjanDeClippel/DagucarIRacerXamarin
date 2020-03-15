@@ -10,14 +10,15 @@ using Android.Content.PM;
 using Android.Hardware;
 using Android.OS;
 using Android.Runtime;
+using Android.Support.V7.App;
 using Android.Views;
 using Android.Widget;
 using Dagucar.Enums;
 
 namespace Dagucar.Activities
 {
-    [Activity(Label = "RaceActivity", ScreenOrientation = ScreenOrientation.Portrait)]
-    public partial class RaceActivity : Activity, ISensorEventListener
+    [Activity(Label = "Race", Theme = "@style/AppTheme", ScreenOrientation = ScreenOrientation.Portrait)]
+    public partial class RaceActivity : AppCompatActivity, ISensorEventListener
     {
         public static BluetoothSocket Socket;
         private SensorManager sensorManager;
@@ -62,6 +63,7 @@ namespace Dagucar.Activities
 
         private async void SbrSpeed_ProgressChanged(object sender, SeekBar.ProgressChangedEventArgs e)
         {
+            lblSpeed.Text = e.Progress.ToString();
             if (!useAccellero)
             {
                 carControl.Speed = Math.Abs(e.Progress);
@@ -74,6 +76,13 @@ namespace Dagucar.Activities
 
         private async void SbrDirection_ProgressChanged(object sender, SeekBar.ProgressChangedEventArgs e)
         {
+            lblDirection.Text = e.Progress switch
+            {
+                -1 => "Left",
+                1 => "Right",
+                _ => "Straight"
+            };
+
             if (!useAccellero)
             {
                 carControl.Direction = e.Progress switch

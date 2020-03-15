@@ -25,7 +25,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:text="0" />
+            android:text="0"
+            android:id="@+id/lblDirection" />
     </LinearLayout>
     <LinearLayout
            android:layout_width="match_parent"
@@ -44,7 +45,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:text="0" />
+            android:text="0"
+            android:id="@+id/lblSpeed" />
     </LinearLayout>
     <CheckBox
         android:text="Use Accellerometer"
