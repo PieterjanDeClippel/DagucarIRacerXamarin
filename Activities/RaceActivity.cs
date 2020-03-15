@@ -17,104 +17,36 @@ using Dagucar.Enums;
 namespace Dagucar.Activities
 {
     [Activity(Label = "RaceActivity", ScreenOrientation = ScreenOrientation.Portrait)]
-    public class RaceActivity : Activity, ISensorEventListener
+    public partial class RaceActivity : Activity, ISensorEventListener
     {
         public static BluetoothSocket Socket;
         private SensorManager sensorManager;
-        private bool useAccellero = true;
+        private CarControl carControl;
+        private bool useAccellero;
 
-        private Button btnVooruit;
-        private Button btnAchteruit;
-        private Button btnLinks;
-        private Button btnRechts;
-
-        #region Direction
-        public eDirection Direction { get; set; }
-        #endregion
-        #region Sense
-        public eSense Sense { get; set; }
-        #endregion
-        #region Speed
-        private int speed;
-        public int Speed
-        {
-            get { return speed; }
-            set
-            {
-                if (value < 0) throw new InvalidOperationException("Speed cannot be smaller than 0");
-                if (value > 15) throw new InvalidOperationException("Speed cannot be bigger than 15");
-                speed = value;
-            }
-        }
-        #endregion
-        #region Update
+        #region WriteToStream
         private byte sentByte;
-        private async Task UpdateAsync()
+        /// <summary>Writes the byte to the stream.</summary>
+        /// <returns></returns>
+        private async Task WriteToStreamAsync()
         {
-            var newByte = ComputeDirection(Direction, Sense, speed);
+            var newByte = carControl.DataToSend;
             if (sentByte == newByte) return;
             sentByte = newByte;
             await Socket.OutputStream.WriteAsync(new[] { newByte });
         }
-        private byte ComputeDirection(eDirection direction, eSense sense, int speed)
-        {
-            int ms_nibble;
-            if (sense == eSense.Forward)
-            {
-                if (direction == eDirection.Left) ms_nibble = 5;
-                else if (direction == eDirection.Right) ms_nibble = 6;
-                else ms_nibble = 1;
-            }
-            else if (sense == eSense.Backward)
-            {
-                if (direction == eDirection.Left) ms_nibble = 7;
-                else if (direction == eDirection.Right) ms_nibble = 8;
-                else ms_nibble = 2;
-            }
-            else
-            {
-                if (direction == eDirection.Left) ms_nibble = 3;
-                else if (direction == eDirection.Right) ms_nibble = 4;
-                else ms_nibble = 0;
-            }
-
-            if (speed < 0) throw new Exception("Speed cannot be smaller than 0");
-            if (speed > 15) throw new Exception("Speed cannot be larger than 15");
-
-            var val = (ms_nibble << 4) + (speed);
-            Console.WriteLine($"Byte: {val}, Direction: {Enum.GetName(typeof(eDirection), direction)}, Sense: {Enum.GetName(typeof(eSense), sense)}, Direction: {ms_nibble}, Speed: {speed}");
-
-            return Convert.ToByte(val);
-        }
         #endregion
-
-        protected override void OnCreate(Bundle savedInstanceState)
-        {
-            base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.activity_race);
-
-            btnVooruit = FindViewById<Button>(Resource.Id.btnForward);
-            btnAchteruit = FindViewById<Button>(Resource.Id.btnBackward);
-            btnLinks = FindViewById<Button>(Resource.Id.btnLeft);
-            btnRechts = FindViewById<Button>(Resource.Id.btnRight);
-            sensorManager = (SensorManager)GetSystemService(SensorService);
-
-            btnVooruit.Click += BtnVooruit_Click;
-            btnAchteruit.Click += BtnAchteruit_Click;
-            btnLinks.Click += BtnLinks_Click;
-            btnRechts.Click += BtnRechts_Click;
-        }
-
+        #region Lifecycle hooks
         protected override void OnResume()
         {
             base.OnResume();
-			sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Accelerometer), SensorDelay.Ui);
+            sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Accelerometer), SensorDelay.Ui);
         }
 
         protected override void OnPause()
         {
             base.OnPause();
-			sensorManager.UnregisterListener(this);
+            sensorManager.UnregisterListener(this);
         }
 
         public override void OnBackPressed()
@@ -124,43 +56,33 @@ namespace Dagucar.Activities
             Socket.Dispose();
             base.OnBackPressed();
         }
+        #endregion
 
         #region Manual control
-        private async void BtnRechts_Click(object sender, EventArgs e)
+
+        private async void SbrSpeed_ProgressChanged(object sender, SeekBar.ProgressChangedEventArgs e)
         {
             if (!useAccellero)
             {
-                Direction = eDirection.Right;
-                await UpdateAsync();
+                carControl.Speed = Math.Abs(e.Progress);
+                carControl.Sense = e.Progress == 0 ? eSense.Stop
+                    : e.Progress > 0 ? eSense.Forward
+                    : eSense.Backward;
+                await WriteToStreamAsync();
             }
         }
 
-        private async void BtnLinks_Click(object sender, EventArgs e)
+        private async void SbrDirection_ProgressChanged(object sender, SeekBar.ProgressChangedEventArgs e)
         {
             if (!useAccellero)
             {
-                Direction = eDirection.Left;
-                await UpdateAsync();
-            }
-        }
-
-        private async void BtnAchteruit_Click(object sender, EventArgs e)
-        {
-            if (!useAccellero)
-            {
-                Speed = 15;
-                Sense = eSense.Backward;
-                await UpdateAsync();
-            }
-        }
-
-        private async void BtnVooruit_Click(object sender, EventArgs e)
-        {
-            if (!useAccellero)
-            {
-                Speed = 15;
-                Sense = eSense.Forward;
-                await UpdateAsync();
+                carControl.Direction = e.Progress switch
+                {
+                    -1 => eDirection.Left,
+                    1 => eDirection.Right,
+                    _ => eDirection.Straight
+                };
+                await WriteToStreamAsync();
             }
         }
         #endregion
@@ -170,20 +92,20 @@ namespace Dagucar.Activities
         {
         }
 
-        void ISensorEventListener.OnSensorChanged(SensorEvent e)
+        async void ISensorEventListener.OnSensorChanged(SensorEvent e)
         {
             if (useAccellero)
             {
                 lock (syncLock)
                 {
-                    byte send = ConvertDirection(e.Values);
-                    if (send != sentByte)
-                        Socket.OutputStream.Write(new byte[] { sentByte = send }, 0, 1);
+                    UpdateCarControlForAccellero(e.Values);
+                    UpdateSliders();
                 }
+                await WriteToStreamAsync();
             }
         }
 
-        public byte ConvertDirection(IList<float> accel)
+        private void UpdateCarControlForAccellero(IList<float> accel)
         {
             // http://cdn.sparkfun.com/datasheets/Robotics/DaguCarCommands.pdf
             //
@@ -194,25 +116,42 @@ namespace Dagucar.Activities
             float y = accel[1];
 
             // speed =   0 -> 15
-            int speed = System.Math.Min(Convert.ToInt32(System.Math.Abs(y) * 2), 15);
-            // forw =	true:vooruit	false:achteruit
-            bool forw = y <= 0;
-            // dir =	0:links	-1:rechtdoor	1:rechts
-            int dir = x >= 3 ? 0 : x <= -3 ? 1 : -1;
-
-            int MSB_nibble = 0;
-            if (dir == -1)
-            {
-                MSB_nibble = forw ? 1 : 2;
-            }
-            else
-            {
-                MSB_nibble = forw ? 5 : 7;
-                MSB_nibble += dir;
-            }
-
-            return Convert.ToByte((MSB_nibble << 4) + speed);
+            carControl.Speed = Math.Min(Convert.ToInt32(Math.Abs(y) * 2), 15);
+            // sense =	true:vooruit	false:achteruit
+            carControl.Sense =
+                y < 0 ? eSense.Forward :
+                y > 0 ? eSense.Backward :
+                eSense.Stop;
+            // direction =	0:links	-1:rechtdoor	1:rechts
+            carControl.Direction =
+                x >= 3 ? eDirection.Left :
+                x <= -3 ? eDirection.Right :
+                eDirection.Straight;
         }
+        private void UpdateSliders()
+        {
+            RunOnUiThread(() =>
+            {
+                sbrSpeed.Progress = carControl.Sense switch
+                {
+                    eSense.Forward => carControl.Speed,
+                    eSense.Backward => -carControl.Speed,
+                    _ => 0
+                };
+                sbrDirection.Progress = carControl.Direction switch
+                {
+                    eDirection.Left => -1,
+                    eDirection.Right => 1,
+                    _ => 0
+                };
+            });
+        }
+
+        private void ChkAccellero_CheckedChange(object sender, CompoundButton.CheckedChangeEventArgs e)
+        {
+            useAccellero = e.IsChecked;
+        }
+
         #endregion
     }
 }

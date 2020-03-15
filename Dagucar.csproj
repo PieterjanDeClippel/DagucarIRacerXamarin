@@ -67,6 +67,10 @@
     <Compile Include="Activities\DiscoverActivity.cs" />
     <Compile Include="Activities\MainActivity.cs" />
     <Compile Include="Activities\RaceActivity.cs" />
+    <Compile Include="Activities\RaceActivity.designer.cs">
+      <DependentUpon>RaceActivity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CarControl.cs" />
     <Compile Include="Enums\eDirection.cs" />
     <Compile Include="Enums\eSense.cs" />
     <Compile Include="Events\EventArgs\BondStateChangedEventArgs.cs" />
