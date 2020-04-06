@@ -1,4 +1,4 @@
-# DagucarXamarin
+# Dagucar - i-racer - Xamarin
 Control a Dagucar with this Xamarin.Android application
 
 This Xamarin-App allows you to:
