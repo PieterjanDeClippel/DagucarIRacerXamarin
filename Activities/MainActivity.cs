@@ -9,6 +9,8 @@ using Android.Content;
 using Android.Bluetooth;
 using System.Collections.Generic;
 using Java.Util;
+using Android.Support.V4.Content;
+using System.Threading.Tasks;
 
 namespace Dagucar.Activities
 {
@@ -32,7 +34,8 @@ namespace Dagucar.Activities
             btnDiscover.Click += BtnDiscover_Click;
             listGekoppeld.ItemClick += ListGekoppeld_ItemClick;
 
-            adapter = BluetoothAdapter.DefaultAdapter;
+            var bluetoothManager = (BluetoothManager)Application.Context.GetSystemService(Context.BluetoothService);
+            adapter = bluetoothManager?.Adapter;
         }
 
         protected override void OnStart()
@@ -49,17 +52,31 @@ namespace Dagucar.Activities
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
+        private string[] requiredPermissions = new[]
+        {
+            Manifest.Permission.Bluetooth,
+            Manifest.Permission.BluetoothAdmin,
+            Manifest.Permission.BluetoothAdvertise,
+            Manifest.Permission.BluetoothConnect,
+            Manifest.Permission.BluetoothScan,
+            Manifest.Permission.BluetoothPrivileged,
+            Manifest.Permission.AccessFineLocation,
+            Manifest.Permission.AccessCoarseLocation,
+            "android.hardware.sensor.accelerometer"
+        };
+
+
         private void RequestBluetoothPermissions()
         {
-            var requiredPermissions = new[]
+            var missingPermissions = new List<string>();
+            foreach (var permission in requiredPermissions)
             {
-                Manifest.Permission.Bluetooth,
-                Manifest.Permission.BluetoothAdmin,
-                Manifest.Permission.AccessCoarseLocation,
-                "android.hardware.sensor.accelerometer"
-            };
+                if (ContextCompat.CheckSelfPermission(this, permission) != Android.Content.PM.Permission.Granted)
+                    missingPermissions.Add(permission);
+            }
 
-            ActivityCompat.RequestPermissions(this, requiredPermissions, 1);
+            if (missingPermissions.Count > 0)
+                ActivityCompat.RequestPermissions(this, missingPermissions.ToArray(), 1);
         }
 
         #region Request enable bluetooth
@@ -124,21 +141,26 @@ namespace Dagucar.Activities
             StartActivity(typeof(DiscoverActivity));
         }
 
-        private void ListGekoppeld_ItemClick(object sender, AdapterView.ItemClickEventArgs e)
+        private async void ListGekoppeld_ItemClick(object sender, AdapterView.ItemClickEventArgs e)
         {
             try
             {
                 var device = bondedDevices[e.Position];
                 adapter.CancelDiscovery();
 
-                var uuid = UUID.FromString("00001101-0000-1000-8000-00805F9B34FB");
+                //var uuid = UUID.FromString("00001101-0000-1000-8000-00805F9B34FB");
+                //var uuid = UUID.FromString("00000000-0000-1000-8000-00805F9B34FB");
+
+                var uuids = device.GetUuids();
+                var uuid = (uuids is null || uuids.Length == 0) ? UUID.FromString("00001101-0000-1000-8000-00805F9B34FB") : uuids[0].Uuid;
                 var sock = device.CreateRfcommSocketToServiceRecord(uuid);
-                sock.Connect();
+                if (!sock.IsConnected)
+                    await sock.ConnectAsync();
 
                 RaceActivity.Socket = sock;
                 StartActivity(typeof(RaceActivity));
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
                 Toast.MakeText(this, "Could not connect to device", ToastLength.Long).Show();
             }
