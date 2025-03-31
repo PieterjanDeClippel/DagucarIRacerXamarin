@@ -2,6 +2,7 @@
 using Android.Widget;
 using Android.Hardware;
 using Android.App;
+using static Android.OS.PowerManager;
 
 namespace Dagucar.Activities
 {
@@ -29,6 +30,20 @@ namespace Dagucar.Activities
             sbrDirection.ProgressChanged += SbrDirection_ProgressChanged;
             sbrSpeed.ProgressChanged += SbrSpeed_ProgressChanged;
             chkAccellero.CheckedChange += ChkAccellero_CheckedChange;
+
+            powerManager = (PowerManager)GetSystemService(PowerService);
+            wakeLock = powerManager?.NewWakeLock(WakeLockFlags.ScreenBright, "Dagucar::KeepAwakeTag");
+
+            wakeLock?.Acquire();
+        }
+
+        PowerManager powerManager;
+        WakeLock wakeLock;
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            wakeLock?.Release();
         }
     }
 }
