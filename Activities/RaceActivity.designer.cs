@@ -44,6 +44,8 @@ namespace Dagucar.Activities
         {
             base.OnDestroy();
             wakeLock?.Release();
+            powerManager.Dispose();
+            wakeLock.Dispose();
         }
     }
 }
