@@ -1,6 +1,8 @@
 # Dagucar - i-racer - Xamarin
 Control a Dagucar with this Xamarin.Android application
 
+[Demo video](https://www.youtube.com/shorts/-WPSf1p4rbw)
+
 This Xamarin-App allows you to:
 - Discover devices
 - Pair with devices
